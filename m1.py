@@ -47,7 +47,8 @@
 # complexity of t-table estimation depends primarily on the E-step. During the
 # E-step, for each training pair, this module takes an outer loop over the 
 # source words and an inner loop over the target words, as proposed by Brown 
-# et al. However, some published descriptions of Model 1 call for three nested # loops, making training intractable for even moderate amounts of data.
+# et al. However, some published descriptions of Model 1 call for three nested 
+# loops, making training intractable for even moderate amounts of data.
 # 
 # In the standard description of this model my "s" ("source") is called "f" 
 # ("French") and my "t" ("target") is called "e" ("English"). The Python
