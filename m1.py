@@ -107,11 +107,11 @@ class M1(object):
     is performed by calling the iterate() method on the instance.
 
     >>> model = M1('data/hansards.f.small', 'data/hansards.e.small')
-    >>> print round(model['gouvernement']['government'], 5) # before
-    0.03069
-    >>> model.iterate(5)
-    >>> print round(model['gouvernement']['government'], 5) # after
-    0.98719
+    >>> print round(model['GOUVERNEMENT']['GOVERNMENT'], 3) # before
+    0.031
+    >>> model.iterate(10)
+    >>> print round(model['GOUVERNEMENT']['GOVERNMENT'], 3) # after
+    0.859
     """
 
     def __init__(self, source, target):
@@ -135,7 +135,7 @@ class M1(object):
         return 'M1({0}, {1})'.format(self.source, self.target)
 
     def __getitem__(self, item):
-        return exp(self.ttable[item])
+        return self.ttable[item]
 
     def _normalize(self):
         for (sw, twtable) in self.ttable.iteritems():
@@ -149,7 +149,7 @@ class M1(object):
         """
         for i in xrange(n):
             if verbose:
-                print >>stderr, 'iteration {0}...'.format(self.n)
+                print >> stderr, 'iteration {0}...'.format(self.n)
             acounts = defaultdict(float)
             tcounts = defaultdict(float)
             ## E-step
