@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 # Sample application
-# 
-# NB: In printing the alignment probabilities, values < 1e-6 are truncated
 
 from sys import stderr, argv
 from operator import itemgetter
@@ -9,7 +7,7 @@ from getopt import getopt, GetoptError
 
 from m1 import M1
 
-_min = 0.0001
+MIN = 0.0001
 
 if __name__ == '__main__':
     ## parse args
@@ -47,11 +45,13 @@ if __name__ == '__main__':
     model = M1(source, target)
     model.iterate(n, verbose=True)
 
+    """
     ## dump t-table
     for (sw, twtable) in model.ttable.iteritems():
         print '{0}'.format(sw),
         for (tw, val) in sorted(twtable.iteritems(), reverse=True,
                                                      key=itemgetter(1)):
-            if val < _min: continue
+            if val < MIN: continue
             print '{0}:{1:.4f}'.format(tw, val),
         print
+    """
