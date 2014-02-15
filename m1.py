@@ -81,6 +81,8 @@
 # Alignments are lazily computed: an alignment for a single source/target pair
 # s, t is a generator. And, a set of alignments is also a generator.
 
+import cPickle
+
 from sys import stderr
 from math import log, exp
 from collections import defaultdict
@@ -96,6 +98,7 @@ def bitext(source, target):
         yield ([None] + s.strip().split(), t.strip().split())
         # null on source side only
 
+def floatdict(): return defaultdict(float)
 
 class M1(object):
     """
@@ -110,22 +113,41 @@ class M1(object):
     0.859
     """
 
-    def __init__(self, source, target):
+    def __init__(self, source=None, target=None):
         """
         Takes two arguments, specifying the paths (or a file-like objects
         with appropriate 'read' methods) of source and target bitexts
         """
         self.source = source
         self.target = target
-        self.ttable = defaultdict(lambda: defaultdict(float)) # p(s|t)
-        # compute raw co-occurrence frequencies
-        for (s, t) in bitext(self.source, self.target):
-            for sw in s: # FIXME set
-                for tw in t: # FIXME set?
-                    self.ttable[sw][tw] += 1
-        # normalize them
-        self._normalize()
-        self.n = 0 # number of iterations thus far
+        self.ttable = defaultdict(floatdict) # p(s|t)
+
+        if source and target:
+            # compute raw co-occurrence frequencies
+            for (s, t) in bitext(self.source, self.target):
+                for sw in s: # FIXME set
+                    for tw in t: # FIXME set?
+                        self.ttable[sw][tw] += 1
+            # normalize them
+            self._normalize()
+            self.n = 0 # number of iterations thus far
+
+    def save(self, f):
+
+        with file(f, 'w') as f:
+            cPickle.dump(self.ttable, f, cPickle.HIGHEST_PROTOCOL)
+            cPickle.dump(self.n, f, cPickle.HIGHEST_PROTOCOL)
+
+
+    @classmethod
+    def load(cls, f):
+        res = cls()
+
+        with file(f) as f:
+            res.ttable = cPickle.load(f)
+            res.n = cPickle.load(f)
+
+        return res
 
     def __repr__(self):
         return 'M1({0}, {1})'.format(self.source, self.target)
@@ -143,6 +165,10 @@ class M1(object):
         """
         Perform n iterations of EM training
         """
+
+        if not self.source or not self.target:
+            raise Exception("Source/Target lost, was I loaded?")
+
         for i in xrange(n):
             if verbose:
                 print >> stderr, 'iteration {0}...'.format(self.n)
