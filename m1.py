@@ -1,83 +1,83 @@
 #!/usr/bin/env python
-# 
+#
 # Copyright (c) 2012-2013 Kyle Gorman <gormanky@ohsu.edu>
-# 
-# Permission is hereby granted, free of charge, to any person obtaining a copy 
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights 
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
-# copies of the Software, and to permit persons to whom the Software is 
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
-# The above copyright notice and this permission notice shall be included in 
+#
+# The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-# 
+#
 # m1.py: IBM Model 1 machine translation
-# 
+#
 # Trains an IBM model one translation table from bitexts. See the included
 # m1.py script for an example application. A small tokenized and uppercased
-# portion of the Canadian Hansards, parlimentary proceedings in French and 
-# English, is included in the data/ directory. The full set of data can be 
+# portion of the Canadian Hansards, parlimentary proceedings in French and
+# English, is included in the data/ directory. The full set of data can be
 # found at the following URL:
-# 
+#
 # <http://www.isi.edu/natural-language/download/hansard/>
-# 
-# IBM Model 1 is described in the following paper: 
-# 
+#
+# IBM Model 1 is described in the following paper:
+#
 # Brown, P., Della Pietra, V., Della Pietra, S., and Mercer, R. 1993. The
-# mathematics of statistical machine translation: Parameter estimation. 
+# mathematics of statistical machine translation: Parameter estimation.
 # Computational Linguistics 19(2): 263-312.
-# 
-# This paper is just one of many that include a pseudocode description of the 
-# t-table estimation algorithm. However, my experience is that many of these 
+#
+# This paper is just one of many that include a pseudocode description of the
+# t-table estimation algorithm. However, my experience is that many of these
 # pseudocode algorithms are not efficient, or are simply incorrect. The
 # complexity of t-table estimation depends primarily on the E-step. During the
-# E-step, for each training pair, this module takes an outer loop over the 
-# source words and an inner loop over the target words, as proposed by Brown 
+# E-step, for each training pair, this module takes an outer loop over the
+# source words and an inner loop over the target words, as proposed by Brown
 # et al. However, some published descriptions of Model 1 call for three nested
 # loops, making training intractable for even moderate amounts of data.
-# 
+#
 # In the standard description of this model my "s" ("source") is called "f"
 # ("French") and my "t" ("target") is called "e" ("English"). The Python
 # None type is used to represent alignments to nulls (i.e., insertion or
 # deletion).
-# 
+#
 # You will probably want to translate your training data into all uppercase or
 # all lowercase characters if you're using languages that distinguish between
-# the two. 
-# 
+# the two.
+#
 # Given a trained M1 instance `model1`, `model1[None]` returns the distribution
 # over possible insertions. Given a source word `X`, its deletion
 # probability is given by `model1[X][None]`. `1 - model1[None][None]` is the
 # insertion probability itself. There is no unary deletion probability: all
 # deletion probabilities are lexically conditioned.
-# 
-# To limit memory requirements of this code, sentence-pairs are not stored in 
+#
+# To limit memory requirements of this code, sentence-pairs are not stored in
 # memory, but rather are read online. The IO penalty appears to be minimal, as
 # runs of m1.py tend to sit at near 100% CPU utilization.
-# 
+#
 # That said, this code is very slow and since it is CPU-bound but also involves
 # high-level Python operations, it cannot be parallelized in CPython.
 # A parallel implementation of this code would involve a pool of threads
-# pulling sentence pairs from a queue during the E-step. Once the queue is 
-# empty, the M-step is done by a single thread. Decoding can also be done in 
+# pulling sentence pairs from a queue during the E-step. Once the queue is
+# empty, the M-step is done by a single thread. Decoding can also be done in
 # parallel in a similar fashion. To produce a full Model 1, this code must
 # also be extended to compute a source-target fertility table (which maps from
 # the number of words in the source sentence to a distribution of number of
 # words in the target sentence) and be "composed" with a language model.
 #
 # FIXME labels follow lines that might be better iterating over a set object,
-# which contains only unique counts. I'm not sure it matters, though. 
-# 
-# NB: the code for decoding alignments has not been carefully debugged yet. 
+# which contains only unique counts. I'm not sure it matters, though.
+#
+# NB: the code for decoding alignments has not been carefully debugged yet.
 # Alignments are lazily computed: an alignment for a single source/target pair
 # s, t is a generator. And, a set of alignments is also a generator.
 
@@ -118,7 +118,7 @@ class M1(object):
         self.source = source
         self.target = target
         self.ttable = defaultdict(lambda: defaultdict(float)) # p(s|t)
-        # compute raw co-occurrence frequencies 
+        # compute raw co-occurrence frequencies
         for (s, t) in bitext(self.source, self.target):
             for sw in s: # FIXME set
                 for tw in t: # FIXME set?
@@ -126,7 +126,7 @@ class M1(object):
         # normalize them
         self._normalize()
         self.n = 0 # number of iterations thus far
- 
+
     def __repr__(self):
         return 'M1({0}, {1})'.format(self.source, self.target)
 
@@ -165,7 +165,7 @@ class M1(object):
 
     def decode_pair(self, s, t):
         """
-        Given a pair of source/target sentences s, t, output the optimal 
+        Given a pair of source/target sentences s, t, output the optimal
         alignment.
         """
         for sw in s:
