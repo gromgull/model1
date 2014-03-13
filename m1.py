@@ -113,24 +113,19 @@ class M1(object):
     0.859
     """
 
-    def __init__(self, source=None, target=None):
-        """
-        Takes two arguments, specifying the paths (or a file-like objects
-        with appropriate 'read' methods) of source and target bitexts
-        """
-        self.source = source
-        self.target = target
+    def __init__(self, input_words=None):
+        self.input_words = input_words
         self.ttable = defaultdict(floatdict) # p(s|t)
-
-        if source and target:
+        if input_words:
             # compute raw co-occurrence frequencies
-            for (s, t) in bitext(self.source, self.target):
+            for (s, t) in self.input_words():
                 for sw in s: # FIXME set
                     for tw in t: # FIXME set?
                         self.ttable[sw][tw] += 1
             # normalize them
             self._normalize()
-            self.n = 0 # number of iterations thus far
+        self.n = 0 # number of iterations thus far
+
 
     def save(self, f):
 
@@ -149,9 +144,6 @@ class M1(object):
 
         return res
 
-    def __repr__(self):
-        return 'M1({0}, {1})'.format(self.source, self.target)
-
     def __getitem__(self, item):
         return self.ttable[item]
 
@@ -166,8 +158,8 @@ class M1(object):
         Perform n iterations of EM training
         """
 
-        if not self.source or not self.target:
-            raise Exception("Source/Target lost, was I loaded?")
+        if not self.input_words:
+            raise Exception("No input_words set, cannot train.")
 
         for i in xrange(n):
             if verbose:
@@ -175,7 +167,7 @@ class M1(object):
             acounts = defaultdict(float)
             tcounts = defaultdict(float)
             ## E-step
-            for (s, t) in bitext(self.source, self.target):
+            for (s, t) in self.input_words():
                 for sw in s: # FIXME
                     for tw in t: # FIXME
                         # compute expectation and preserve it
@@ -208,7 +200,7 @@ class M1(object):
         """
         Generator of the optimal decodings for the training sentences
         """
-        for s, t in bitext(self.source, self.target):
+        for s, t in self.input_words():
             yield self.decode_pair(s, t)
 
 
